@@ -92,31 +92,50 @@ def q1_output(
 # # n: size of the ngram you want to use to compute probabilities
 # # corpus: list of sentences to score. Each sentence is a string with tokens separated by spaces, ending in a newline character.
 # # This function must return a python list of scores, where the first element is the score of the first sentence, etc. 
-# def score(ngram_p: dict, n: int, corpus: list[str]) -> list[float]:
-#     """
+def score(ngram_p: dict, n: int, corpus: list[str]) -> list[float]:
+    """
 
-#     """
-#     scores: list[float] = []
-    
-#     return scores
+    """
+    scores: list[float] = []
+    for sentence in corpus:
+        words = [START_SYMBOL] * 2 + sentence.split() + [STOP_SYMBOL]
 
-# # Outputs a score to a file
-# # scores: list of scores
-# # filename: is the output file name
-# def score_output(scores: list[float], filename: str) -> None:
-#     """Write sentence scores to a file.
+        # extracting n-grams based on
+        if n == 1:
+            ngrams = [(w,) for w in words if w != START_SYMBOL]
+        elif n == 2:
+            ngrams = list(nltk.bigrams(words))
+        else:
+            ngrams = list(nltk.trigrams(words))
 
-#     Args:
-#         scores: List of numeric scores.
-#         filename: Output file path.
+        # sum of log probabilities
+        sentence_score = 0
+        for ng in ngrams:
+            if ng not in  ngram_p:
+                sentence_score = MINUS_INFINITY_SENTENCE_LOG_PROB
+                break
+            sentence_score += ngram_p[ng]  
 
-#     Returns:
-#         None.
-#     """
-#     outfile = open(filename, 'w')
-#     for score in scores:
-#         outfile.write(str(score) + '\n')
-#     outfile.close()
+        scores.append(sentence_score)
+    return scores
+
+# Outputs a score to a file
+# scores: list of scores
+# filename: is the output file name
+def score_output(scores: list[float], filename: str) -> None:
+    """Write sentence scores to a file.
+
+    Args:
+        scores: List of numeric scores.
+        filename: Output file path.
+
+    Returns:
+        None.
+    """
+    outfile = open(filename, 'w')
+    for score in scores:
+        outfile.write(str(score) + '\n')
+    outfile.close()
 
 # # TODO: IMPLEMENT THIS FUNCTION
 # # First, ensure you add proper docstrings to this function, and then implement it.
@@ -156,15 +175,15 @@ def main():
     # question 1 output
     q1_output(unigrams, bigrams, trigrams, OUTPUT_PATH + 'A1.txt')
 
-    # # score sentences (question 2)
-    # uniscores = score(unigrams, 1, corpus)
-    # biscores = score(bigrams, 2, corpus)
-    # triscores = score(trigrams, 3, corpus)
+    # score sentences (question 2)
+    uniscores = score(unigrams, 1, corpus)
+    biscores = score(bigrams, 2, corpus)
+    triscores = score(trigrams, 3, corpus)
 
-    # # question 2 output
-    # score_output(uniscores, OUTPUT_PATH + 'A2.uni.txt')
-    # score_output(biscores, OUTPUT_PATH + 'A2.bi.txt')
-    # score_output(triscores, OUTPUT_PATH + 'A2.tri.txt')
+    # question 2 output
+    score_output(uniscores, OUTPUT_PATH + 'A2.uni.txt')
+    score_output(biscores, OUTPUT_PATH + 'A2.bi.txt')
+    score_output(triscores, OUTPUT_PATH + 'A2.tri.txt')
 
     # # linear interpolation (question 3)
     # linearscores = linearscore(unigrams, bigrams, trigrams, corpus)
