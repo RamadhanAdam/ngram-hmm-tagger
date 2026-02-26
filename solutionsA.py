@@ -216,13 +216,13 @@ def main():
     sample1scores = linearscore(unigrams, bigrams, trigrams, sample1)
     sample2scores = linearscore(unigrams, bigrams, trigrams, sample2)
 
-    # # question 5 output
-    # score_output(sample1scores, OUTPUT_PATH + 'Sample1_scored.txt')
-    # score_output(sample2scores, OUTPUT_PATH + 'Sample2_scored.txt')
+    # question 5 output
+    score_output(sample1scores, OUTPUT_PATH + 'Sample1_scored.txt')
+    score_output(sample2scores, OUTPUT_PATH + 'Sample2_scored.txt')
 
-    # # print total time to run Part A
-    # elapsed = time.perf_counter() - start_time
-    # print("Part A time: " + str(elapsed) + ' sec')
+    # print total time to run Part A
+    elapsed = time.perf_counter() - start_time
+    print("Part A time: " + str(elapsed) + ' sec')
 
 if __name__ == "__main__":
     main()
