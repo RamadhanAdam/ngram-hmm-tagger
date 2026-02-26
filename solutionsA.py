@@ -142,18 +142,31 @@ def score_output(scores: list[float], filename: str) -> None:
 # # Calculates scores (log probabilities) for every sentence with a linearly interpolated model
 # # Each ngram argument is a python dictionary where the keys are tuples that express an ngram and the value is the log probability of that ngram
 # # Like score(), this function returns a python list of scores
-# def linearscore(
-#         unigrams: dict[tuple[str], float],
-#         bigrams: dict[tuple[str, str], float],
-#         trigrams: dict[tuple[str, str, str], float],
-#         corpus: list[str]
-#     ) -> list[float]:
-#     """
+def linearscore(
+        unigrams: dict[tuple[str], float],
+        bigrams: dict[tuple[str, str], float],
+        trigrams: dict[tuple[str, str, str], float],
+        corpus: list[str]
+    ) -> list[float]:
+    """
 
-#     """
-#     scores: list[float] = []
+    """
     
-#     return scores
+    scores: list[float] = []
+    for sentence in corpus:
+        sentence_score = 0.0 
+        words = [START_SYMBOL] * 2  + sentence.split() + [STOP_SYMBOL]
+        tri_list= list(nltk.trigrams(words))
+        for token in tri_list:
+            uni = unigrams.get((token[2],), MINUS_INFINITY_SENTENCE_LOG_PROB)
+            bi = bigrams.get((token[1], token[2]), MINUS_INFINITY_SENTENCE_LOG_PROB)
+            tri = trigrams.get((token[0],token[1], token[2]), MINUS_INFINITY_SENTENCE_LOG_PROB)
+
+            prob = (math.pow(2, uni) + math.pow(2, bi) + math.pow(2, tri)) / 3
+            sentence_score += math.log(prob, 2)
+        scores.append(sentence_score)
+    
+    return scores
 
 DATA_PATH = 'data/'
 OUTPUT_PATH = 'output/'
@@ -185,23 +198,23 @@ def main():
     score_output(biscores, OUTPUT_PATH + 'A2.bi.txt')
     score_output(triscores, OUTPUT_PATH + 'A2.tri.txt')
 
-    # # linear interpolation (question 3)
-    # linearscores = linearscore(unigrams, bigrams, trigrams, corpus)
+    # linear interpolation (question 3)
+    linearscores = linearscore(unigrams, bigrams, trigrams, corpus)
 
-    # # question 3 output
-    # score_output(linearscores, OUTPUT_PATH + 'A3.txt')
+    # question 3 output
+    score_output(linearscores, OUTPUT_PATH + 'A3.txt')
 
-    # # open Sample1 and Sample2 (question 5)
-    # infile = open(DATA_PATH + 'Sample1.txt', 'r')
-    # sample1 = infile.readlines()
-    # infile.close()
-    # infile = open(DATA_PATH + 'Sample2.txt', 'r')
-    # sample2 = infile.readlines()
-    # infile.close() 
+    # open Sample1 and Sample2 (question 5)
+    infile = open(DATA_PATH + 'Sample1.txt', 'r')
+    sample1 = infile.readlines()
+    infile.close()
+    infile = open(DATA_PATH + 'Sample2.txt', 'r')
+    sample2 = infile.readlines()
+    infile.close() 
 
-    # # score the samples
-    # sample1scores = linearscore(unigrams, bigrams, trigrams, sample1)
-    # sample2scores = linearscore(unigrams, bigrams, trigrams, sample2)
+    # score the samples
+    sample1scores = linearscore(unigrams, bigrams, trigrams, sample1)
+    sample2scores = linearscore(unigrams, bigrams, trigrams, sample2)
 
     # # question 5 output
     # score_output(sample1scores, OUTPUT_PATH + 'Sample1_scored.txt')
