@@ -129,8 +129,21 @@ def calc_known(brown_words: list[list[str]]) -> set[str]:
 # Returns the equivalent to brown_words but replacing the unknown words by '_RARE_' (use RARE_SYMBOL constant)
 def replace_rare(brown_words: list[list[str]], known_words: set[list[str]]) -> list[list[str]]:
     """
+    Replace words appearing 5 times or fewer with the _RARE_ symbol.
+    Start and stop symbols are preserved.
+    
+    Args:
+        brown_words: List of word sequences from training data.
+        known_words: Set of words that appear more than 5 times.
+    
+    Returns:
+        Same structure as brown_words but with rare words replaced by '_RARE_'.
     """
     brown_words_rare: list[list[str]] = []
+
+    for sentence in brown_words:
+        new_sentence = [ word if word in known_words or word == START_SYMBOL or word== STOP_SYMBOL else RARE_SYMBOL for word in sentence]
+        brown_words_rare.append(new_sentence)
     return brown_words_rare
 
 # This function takes the ouput from replace_rare and outputs it to a file
@@ -161,10 +174,29 @@ def calc_emission(
         brown_tags: list[list[str]]
     ) -> tuple[dict[tuple[str, str], float], set[str]]:
     """
+       Compute log2 emission probabilities P(word|tag) for all word-tag pairs.
+    
+    Args:
+        brown_words_rare: Word sequences with rare words replaced by '_RARE_'.
+        brown_tags: Corresponding tag sequences.
+    
+    Returns:
+        e_values: Dict mapping (word, tag) tuples to log2 probabilities.
+        tags_list: Set of all unique tags seen in training data.
     """
     e_values: dict[tuple[str, str], float] = {}
-    tags_list: set[list[str]] = set([])
+    tags_list: set[str] = set()
 
+    word_tag_count = collections.defaultdict(int)
+    tag_count = collections.defaultdict(int)
+
+    for words, tags in zip(brown_words_rare, brown_tags):
+        for word, tag in zip(words, tags):
+            word_tag_count[(word, tag)] += 1
+            tag_count[tag] += 1
+            tags_list.add(tag)
+
+    e_values = {(word, tag): math.log(count/tag_count[tag], 2) for (word, tag), count in word_tag_count.items() }
     return e_values, tags_list
 
 # This function takes the output from calc_emissions() and outputs it
