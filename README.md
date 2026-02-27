@@ -36,3 +36,24 @@ sentence structure. Sample2 has an extremely high perplexity, meaning most of it
 n-grams were never seen during training, which indicates it comes from a different source.
 
 ## Part B - POS Tagging
+
+### Q2 - Tag Trigram Probabilities
+Computed log2 trigram transition probabilities from Brown_tagged_train.txt.
+
+### Q3 - Rare Word Replacement
+Words appearing 5 times or fewer replaced with _RARE_ symbol.
+
+### Q4 - Emission Probabilities
+Computed log2 emission probabilities P(word|tag) for all word-tag pairs.
+
+### Q5 - Viterbi
+Implemented HMM decoding using Viterbi algorithm.
+| Model    | Accuracy |
+|----------|----------|
+| Viterbi  | 93.3%    |
+
+### Q6 - NLTK Tagger
+Trigram tagger with bigram and default backoff.
+| Model        | Accuracy |
+|--------------|----------|
+| NLTK Trigram | 100%     |

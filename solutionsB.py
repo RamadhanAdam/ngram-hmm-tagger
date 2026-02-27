@@ -238,8 +238,70 @@ def viterbi(
         e_values: dict[tuple[str, str], float]
     ) -> list[str]:
     """
+    Tag sentences using the Viterbi algorithm for HMM decoding.
+    
+    For each sentence, finds the most likely tag sequence using dynamic programming.
+    Unknown words are replaced with '_RARE_' for probability lookup but original
+    words are used in the output.
+    
+    Args:
+        brown_dev_words: List of word sequences to tag.
+        taglist: Set of all possible tags.
+        known_words: Set of known words from training data.
+        q_values: Dict mapping tag trigrams to log2 transition probabilities.
+        e_values: Dict mapping (word, tag) to log2 emission probabilities.
+    
+    Returns:
+        List of tagged sentences in "WORD/TAG" format with terminal newline.
     """
     tagged: list[str] = []
+    
+    for sentence in brown_dev_words:
+        T = len(sentence)
+        words = [w if w in known_words else RARE_SYMBOL for w in sentence]
+
+        lattice = [{} for _ in range(T)]
+        backpointer = [{} for _ in range(T)]
+
+        # initialization
+        for tag in taglist:
+            if (words[0], tag) in e_values:
+                lattice[0][tag] = q_values.get((START_SYMBOL, START_SYMBOL, tag), LOG_PROB_OF_ZERO) + e_values[(words[0], tag)]
+                backpointer[0][tag] = (START_SYMBOL, START_SYMBOL)
+
+        # recursion
+        for t in range(1, T):
+            for tag in taglist:
+                if (words[t], tag) not in e_values:
+                    continue
+                best_prob = float('-inf')
+                best_prev = None
+                for prev_tag in lattice[t-1]:
+                    prev_prev_tag = backpointer[t-1][prev_tag][1]
+                    trans = q_values.get((prev_prev_tag, prev_tag, tag), LOG_PROB_OF_ZERO)
+                    prob = lattice[t-1][prev_tag] + trans + e_values[(words[t], tag)]
+                    if prob > best_prob:
+                        best_prob = prob
+                        best_prev = (prev_prev_tag, prev_tag)
+                if best_prev is not None:
+                    lattice[t][tag] = best_prob
+                    backpointer[t][tag] = best_prev
+
+        # termination
+        if not lattice[T-1]:
+            tagged.append(' '.join(w + '/NOUN' for w in sentence) + '\n')
+            continue
+
+        best_last_tag = max(lattice[T-1], key=lambda tag: lattice[T-1][tag])
+
+        # backtrace
+        tags_seq = [best_last_tag]
+        for t in range(T-1, 0, -1):
+            tags_seq.append(backpointer[t][tags_seq[-1]][1])
+        tags_seq.reverse()
+
+        # format output
+        tagged.append(' '.join(sentence[i] + '/' + tags_seq[i] for i in range(T)) + '\n')
 
     return tagged
 
@@ -272,12 +334,29 @@ def nltk_tagger(
         brown_dev_words: list[list[str]]
     ) -> list[str]:
     """
+    Tag sentences using NLTK's trigram tagger with bigram and default backoff.
+    
+    Args:
+        brown_words: Word sequences from training data.
+        brown_tags: Tag sequences from training data.
+        brown_dev_words: Word sequences to tag.
+    
+    Returns:
+        List of tagged sentences in "WORD/TAG" format, one sentence per string.
     """
     # Hint: use the following line to format data to what NLTK expects for training
     training = [list(zip(brown_words[i], brown_tags[i])) for i in range(len(brown_words))]
 
     # IMPLEMENT THE REST OF THE FUNCTION HERE
+    default_tagger = nltk.DefaultTagger("NOUN")
+    bigram_tagger = nltk.BigramTagger(training, backoff = default_tagger)
+    trigram_tagger = nltk.TrigramTagger(training, backoff=bigram_tagger)
+
     tagged: list[str] = []
+
+    for sentence in brown_dev_words:
+        tagged_sent = trigram_tagger.tag(sentence)
+        tagged.append(' '.join(word + '/' + tag for word, tag in tagged_sent) + '\n')
     return tagged
 
 # This function takes the output of nltk_tagger() and outputs it to file
@@ -318,50 +397,50 @@ def main():
     # question 2 output
     q2_output(q_values, OUTPUT_PATH + 'B2.txt')
 
-    # # calculate list of words with count > 5 (question 3)
-    # known_words = calc_known(brown_words)
+    # calculate list of words with count > 5 (question 3)
+    known_words = calc_known(brown_words)
 
-    # # get a version of brown_words with rare words replace with '_RARE_' (question 3)
-    # brown_words_rare = replace_rare(brown_words, known_words)
+    # get a version of brown_words with rare words replace with '_RARE_' (question 3)
+    brown_words_rare = replace_rare(brown_words, known_words)
 
-    # # question 3 output
-    # q3_output(brown_words_rare, OUTPUT_PATH + "B3.txt")
+    # question 3 output
+    q3_output(brown_words_rare, OUTPUT_PATH + "B3.txt")
 
-    # # calculate emission probabilities (question 4)
-    # e_values, taglist = calc_emission(brown_words_rare, brown_tags)
+    # calculate emission probabilities (question 4)
+    e_values, taglist = calc_emission(brown_words_rare, brown_tags)
 
-    # # question 4 output
-    # q4_output(e_values, OUTPUT_PATH + "B4.txt")
+    # question 4 output
+    q4_output(e_values, OUTPUT_PATH + "B4.txt")
 
-    # # delete unneceessary data
-    # del brown_train
-    # del brown_words_rare
+    # delete unneceessary data
+    del brown_train
+    del brown_words_rare
 
-    # # open Brown development data (question 5)
-    # infile = open(DATA_PATH + "Brown_dev.txt", "r")
-    # brown_dev = infile.readlines()
-    # infile.close()
+    # open Brown development data (question 5)
+    infile = open(DATA_PATH + "Brown_dev.txt", "r")
+    brown_dev = infile.readlines()
+    infile.close()
 
-    # # format Brown development data here
-    # brown_dev_words = []
-    # for sentence in brown_dev:
-    #     brown_dev_words.append(sentence.split(" ")[:-1])
+    # format Brown development data here
+    brown_dev_words = []
+    for sentence in brown_dev:
+        brown_dev_words.append(sentence.split(" ")[:-1])
 
-    # # do viterbi on brown_dev_words (question 5)
-    # viterbi_tagged = viterbi(brown_dev_words, taglist, known_words, q_values, e_values)
+    # do viterbi on brown_dev_words (question 5)
+    viterbi_tagged = viterbi(brown_dev_words, taglist, known_words, q_values, e_values)
 
-    # # question 5 output
-    # q5_output(viterbi_tagged, OUTPUT_PATH + 'B5.txt')
+    # question 5 output
+    q5_output(viterbi_tagged, OUTPUT_PATH + 'B5.txt')
 
-    # # do nltk tagging here
-    # nltk_tagged = nltk_tagger(brown_words, brown_tags, brown_dev_words)
+    # do nltk tagging here
+    nltk_tagged = nltk_tagger(brown_words, brown_tags, brown_dev_words)
 
-    # # question 6 output
-    # q6_output(nltk_tagged, OUTPUT_PATH + 'B6.txt')
+    # question 6 output
+    q6_output(nltk_tagged, OUTPUT_PATH + 'B6.txt')
 
-    # # print total time to run Part B
-    # elapsed = time.perf_counter() - start_time
-    # print("Part B time: " + str(elapsed) + ' sec')
+    # print total time to run Part B
+    elapsed = time.perf_counter() - start_time
+    print("Part B time: " + str(elapsed) + ' sec')
 
 if __name__ == "__main__":
     main()
