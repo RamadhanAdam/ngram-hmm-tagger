@@ -10,8 +10,6 @@ START_SYMBOL = '*'
 STOP_SYMBOL = 'STOP'
 MINUS_INFINITY_SENTENCE_LOG_PROB = -1000
 
-# TODO: IMPLEMENT THIS FUNCTION
-# First, ensure you add proper docstrings to this function, and then implement it.
 # Calculates unigram, bigram, and trigram probabilities given a training corpus
 # training_corpus: is a list of the sentences. Each sentence is a string with tokens separated by spaces, ending in a newline character.
 # This function outputs three python dictionaries, where the keys are tuples expressing the ngram and the value is the log probability of that ngram
@@ -94,14 +92,6 @@ def q1_output(
 
     outfile.close()
 
-
-# # TODO: IMPLEMENT THIS FUNCTION
-# # First, ensure you add proper docstrings to this function, and then implement it.
-# # Calculates scores (log probabilities) for every sentence
-# # ngram_p: python dictionary of probabilities of uni-, bi- and trigrams.
-# # n: size of the ngram you want to use to compute probabilities
-# # corpus: list of sentences to score. Each sentence is a string with tokens separated by spaces, ending in a newline character.
-# # This function must return a python list of scores, where the first element is the score of the first sentence, etc. 
 def score(ngram_p: dict, n: int, corpus: list[str]) -> list[float]:
     """
     Compute the log probability score of each sentence using an n-gram model.
@@ -158,8 +148,6 @@ def score_output(scores: list[float], filename: str) -> None:
         outfile.write(str(score) + '\n')
     outfile.close()
 
-# # TODO: IMPLEMENT THIS FUNCTION
-# # First, ensure you add proper docstrings to this function, and then implement it.
 # # Calculates scores (log probabilities) for every sentence with a linearly interpolated model
 # # Each ngram argument is a python dictionary where the keys are tuples that express an ngram and the value is the log probability of that ngram
 # # Like score(), this function returns a python list of scores
@@ -205,7 +193,6 @@ def linearscore(
 DATA_PATH = 'data/'
 OUTPUT_PATH = 'output/'
 
-# DO NOT MODIFY THE MAIN FUNCTION
 def main():
     """Run all steps for Part A and write outputs."""
     # start timer
