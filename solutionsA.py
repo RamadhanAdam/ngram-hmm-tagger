@@ -17,7 +17,17 @@ MINUS_INFINITY_SENTENCE_LOG_PROB = -1000
 # This function outputs three python dictionaries, where the keys are tuples expressing the ngram and the value is the log probability of that ngram
 def calc_probabilities(training_corpus: list[str]) -> tuple[dict, dict, dict]:
     """
-
+    Compute log base 2 probabilities for unigram, bigram, and trigram models.
+    
+    Pads each sentence with two start symbols (*) and one stop symbol (STOP)
+    before counting. Probabilities are computed using maximum likelihood estimation.
+    
+    Args:
+        training_corpus: List of sentences as space-separated strings.
+    
+    Returns:
+        Three dictionaries (unigram_p, bigram_p, trigram_p) mapping n-gram 
+        tuples to their log base 2 probabilities.
     """
     unigram_p = collections.defaultdict(float)
     bigram_p = collections.defaultdict(float)
@@ -94,7 +104,18 @@ def q1_output(
 # # This function must return a python list of scores, where the first element is the score of the first sentence, etc. 
 def score(ngram_p: dict, n: int, corpus: list[str]) -> list[float]:
     """
-
+    Compute the log probability score of each sentence using an n-gram model.
+    
+    Sums the log probabilities of all n-grams in each sentence. If any n-gram
+    is not found in the model, the entire sentence is assigned a score of -1000.
+    
+    Args:
+        ngram_p: Dictionary mapping n-gram tuples to log base 2 probabilities.
+        n: Size of the n-gram (1 for unigram, 2 for bigram, 3 for trigram).
+        corpus: List of sentences as space-separated strings.
+    
+    Returns:
+        List of log probability scores, one per sentence.
     """
     scores: list[float] = []
     for sentence in corpus:
@@ -149,7 +170,20 @@ def linearscore(
         corpus: list[str]
     ) -> list[float]:
     """
-
+    Score each sentence using linear interpolation of three n-gram models.
+    
+    Blends unigram, bigram, and trigram probabilities using equal weights (lambda = 1/3).
+    Converts log probabilities to real probabilities before blending, then converts back.
+    Unseen n-grams are treated as probability 0.
+    
+    Args:
+        unigrams: Dictionary mapping unigram tuples to log base 2 probabilities.
+        bigrams: Dictionary mapping bigram tuples to log base 2 probabilities.
+        trigrams: Dictionary mapping trigram tuples to log base 2 probabilities.
+        corpus: List of sentences as space-separated strings.
+    
+    Returns:
+        List of interpolated log probability scores, one per sentence.
     """
     
     scores: list[float] = []

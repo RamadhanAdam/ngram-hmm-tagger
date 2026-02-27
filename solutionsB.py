@@ -22,11 +22,34 @@ LOG_PROB_OF_ZERO = -1000
 # brown_tags (the list of tags) should be a list where every element is a list of the tags of a particular sentence.
 def split_wordtags(brown_train: list[str]) -> tuple[list[list[str]], list[list[str]]]:
     """
-
+    Split tagged sentences into separate word tag lists.
+    Each token "WORD/TAG" is split on the last '/' to handle words like "1/2/NUM".
+    Each sentence is padded with two start symbols and one stop symbol.
+    
+    Args:
+        brown_train: List of tagged sentences e.g. "He/PRON had/VERB\n"
+    
+    Returns:
+        brown_words: [['*', '*', 'He', 'had', 'STOP'], ...]
+        brown_tags:  [['*', '*', 'PRON', 'VERB', 'STOP'], ...]
     """
     brown_words: list[list[str]] = []
     brown_tags: list[list[str]] = []
-   
+
+    for sentence in brown_train:
+        words = [START_SYMBOL, START_SYMBOL]
+        tags = [START_SYMBOL, START_SYMBOL]
+        for token in sentence.split():
+            word, tag = token.rsplit("/",1)
+            words.append(word)
+            tags.append(tag)
+        
+        words.append(STOP_SYMBOL)
+        tags.append(STOP_SYMBOL)
+
+        brown_words.append(words)
+        brown_tags.append(tags)
+            
     return brown_words, brown_tags
 
 
@@ -36,8 +59,27 @@ def split_wordtags(brown_train: list[str]) -> tuple[list[list[str]], list[list[s
 # It returns a python dictionary where the keys are tuples that represent the tag trigram, and the values are the log probability of that trigram
 def calc_trigrams(brown_tags: list[list[str]]) -> dict[tuple[str, str, str], float]:
     """
+    Compute log2 trigram probabilities for tag sequences.
+    
+    Args:
+        brown_tags: List of tag sequences e.g. [['*', '*', 'PRON', 'VERB', 'STOP'], ...]
+    
+    Returns:
+        Dict mapping tag trigram tuples to log2 probabilities e.g. {('*', '*', 'PRON'): -2.3, ...}
     """
     q_values: dict[tuple[str, str, str], float] = {}
+    bigram_count = collections.defaultdict(float)
+    trigram_count = collections.defaultdict(float)
+
+    for tags in brown_tags:
+        for tg in nltk.bigrams(tags):
+            bigram_count[tg] += 1
+
+    for tags in brown_tags:
+        for tg in nltk.trigrams(tags):
+            trigram_count[tg] += 1
+    q_values = {tg: math.log(count/bigram_count[tg[:2]], 2) for tg, count in trigram_count.items()}
+    
     return q_values
 
 
@@ -64,11 +106,21 @@ def q2_output(q_values: dict[tuple[str, str, str], float], filename: str) -> Non
 # Takes the words from the training data and returns a set of all of the words that occur more than 5 times (use RARE_WORD_MAX_FREQ)
 # brown_words is a python set where every element is a python list of the words of a particular sentence.
 # Note: words that appear exactly 5 times should be considered rare!
-def calc_known(brown_words: list[list[str]]) -> set[list[str]]:
+def calc_known(brown_words: list[list[str]]) -> set[str]:
     """
-    """
-    known_words: set[list[str]] = set([])
+    Return a set of words that appear more than 5 times in the training data.
+    Words appearing 5 times or fewer are considered rare.
     
+    Args:
+        brown_words: List of word sequences from training data.
+    
+    Returns:
+        Set of known words with frequency greater than RARE_WORD_MAX_FREQ.
+    """
+
+    known_words: set[str] = set()
+    word_counts = collections.Counter(word for sentence in brown_words for word in sentence)
+    known_words = {word for word, count in word_counts.items() if count > RARE_WORD_MAX_FREQ}
     return known_words
 
 # TODO: IMPLEMENT THIS FUNCTION
@@ -234,50 +286,50 @@ def main():
     # question 2 output
     q2_output(q_values, OUTPUT_PATH + 'B2.txt')
 
-    # calculate list of words with count > 5 (question 3)
-    known_words = calc_known(brown_words)
+    # # calculate list of words with count > 5 (question 3)
+    # known_words = calc_known(brown_words)
 
-    # get a version of brown_words with rare words replace with '_RARE_' (question 3)
-    brown_words_rare = replace_rare(brown_words, known_words)
+    # # get a version of brown_words with rare words replace with '_RARE_' (question 3)
+    # brown_words_rare = replace_rare(brown_words, known_words)
 
-    # question 3 output
-    q3_output(brown_words_rare, OUTPUT_PATH + "B3.txt")
+    # # question 3 output
+    # q3_output(brown_words_rare, OUTPUT_PATH + "B3.txt")
 
-    # calculate emission probabilities (question 4)
-    e_values, taglist = calc_emission(brown_words_rare, brown_tags)
+    # # calculate emission probabilities (question 4)
+    # e_values, taglist = calc_emission(brown_words_rare, brown_tags)
 
-    # question 4 output
-    q4_output(e_values, OUTPUT_PATH + "B4.txt")
+    # # question 4 output
+    # q4_output(e_values, OUTPUT_PATH + "B4.txt")
 
-    # delete unneceessary data
-    del brown_train
-    del brown_words_rare
+    # # delete unneceessary data
+    # del brown_train
+    # del brown_words_rare
 
-    # open Brown development data (question 5)
-    infile = open(DATA_PATH + "Brown_dev.txt", "r")
-    brown_dev = infile.readlines()
-    infile.close()
+    # # open Brown development data (question 5)
+    # infile = open(DATA_PATH + "Brown_dev.txt", "r")
+    # brown_dev = infile.readlines()
+    # infile.close()
 
-    # format Brown development data here
-    brown_dev_words = []
-    for sentence in brown_dev:
-        brown_dev_words.append(sentence.split(" ")[:-1])
+    # # format Brown development data here
+    # brown_dev_words = []
+    # for sentence in brown_dev:
+    #     brown_dev_words.append(sentence.split(" ")[:-1])
 
-    # do viterbi on brown_dev_words (question 5)
-    viterbi_tagged = viterbi(brown_dev_words, taglist, known_words, q_values, e_values)
+    # # do viterbi on brown_dev_words (question 5)
+    # viterbi_tagged = viterbi(brown_dev_words, taglist, known_words, q_values, e_values)
 
-    # question 5 output
-    q5_output(viterbi_tagged, OUTPUT_PATH + 'B5.txt')
+    # # question 5 output
+    # q5_output(viterbi_tagged, OUTPUT_PATH + 'B5.txt')
 
-    # do nltk tagging here
-    nltk_tagged = nltk_tagger(brown_words, brown_tags, brown_dev_words)
+    # # do nltk tagging here
+    # nltk_tagged = nltk_tagger(brown_words, brown_tags, brown_dev_words)
 
-    # question 6 output
-    q6_output(nltk_tagged, OUTPUT_PATH + 'B6.txt')
+    # # question 6 output
+    # q6_output(nltk_tagged, OUTPUT_PATH + 'B6.txt')
 
-    # print total time to run Part B
-    elapsed = time.perf_counter() - start_time
-    print("Part B time: " + str(elapsed) + ' sec')
+    # # print total time to run Part B
+    # elapsed = time.perf_counter() - start_time
+    # print("Part B time: " + str(elapsed) + ' sec')
 
 if __name__ == "__main__":
     main()
